@@ -108,6 +108,7 @@ def tweet(status, replyto=None, imgfilename=None):
             print(e)
             stat = None
     return stat
+
 def personDesc(gender, age_band):
     if age_band in ("01  (0 - 5)", "02  (6 - 10)", "03  (11 - 15)"):
         return "a child"
@@ -200,24 +201,36 @@ if __name__ == "__main__":
     ksiData = readKSIData("2016_05.tsv")
     addVehicleData(ksiData, r"Veh.csv")
     sortedksiData = sortByDateTime(ksiData)
+    now = datetime.datetime.now()
+    
+    # scroll forward to today
     i = 0
-    while True:
-        de = sortedksiData[i]
-        date, event = de
-        now = datetime.datetime.now()
-        if date.month == now.month and date.day == now.day:
-            cont = composeTweet(date, event)
-            secondsWait = (3600 * date.time().hour + 60 * date.time().minute) - \
-                          (3600 * now.time().hour + 60 * now.time().minute)
-            print("seconds to wait: ", secondsWait)
-            if secondsWait <= 0:
-                tweet(cont)
-
-            else:
-                t = threading.Timer(secondsWait - 2, tweet, [cont])
-                print ("Waiting to tweet: \n",cont)
-                t.start()
-                t.join()
+    de = sortedksiData[i]
+    date, event = de
+    while date.month < now.month or date.day < now.day:
         i += 1
         if i == len(sortedksiData):
             i = 0
+        de = sortedksiData[i]
+        date, event = de
+
+    # tweet all of today'e events.
+    while date.month == now.month and date.day == now.day:
+        secondsWait = (3600 * date.time().hour + 60 * date.time().minute) - \
+                      (3600 * now.time().hour + 60 * now.time().minute)
+        print("seconds to wait: ", secondsWait)
+        cont = composeTweet(date, event)
+        if secondsWait <= 0:
+            tweet(cont)
+
+        else:
+            t = threading.Timer(secondsWait - 2, tweet, [cont])
+            print ("Waiting to tweet: \n",cont)
+            t.start()
+            t.join()
+            
+        i += 1
+        if i == len(sortedksiData):
+            i = 0
+        de = sortedksiData[i]
+        date, event = de
