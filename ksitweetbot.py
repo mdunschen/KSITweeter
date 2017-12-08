@@ -175,7 +175,7 @@ def composeTweet(eventDate, record):
     cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
     dd = personDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0])
     pronoun = translate(cd.split(" ")[-1])
-    fatal = translate(record["Casualty_Severity"])
+    severity = translate(record["Casualty_Severity"])
     lat, lon = record["Latitude"], record["Longitude"]
     streetname = getNearestStreet(lat, lon)
     if streetname:
@@ -196,7 +196,7 @@ def composeTweet(eventDate, record):
             yearsago, \
             streetinfo, \
             cd, \
-            fatal, \
+            severity, \
             dd, \
             vehicle_type[record["Vehicle_Type"][0]][1], \
             pronoun)) 
