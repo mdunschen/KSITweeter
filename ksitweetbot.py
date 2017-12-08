@@ -1,8 +1,10 @@
-import datetime
+import datetime, time
 import re
 import sys
 import pickle
 import operator
+import threading
+
 sys.path.append("C:\\Program Files\\Anaconda3\\envs\\tensorflow\\lib\\site-packages")
 import tweepy
 
@@ -52,6 +54,19 @@ translations = {"2  (Female)": "woman",
                 "11  (Over 75)": "an elderly",
                 "-1":"a"}
 
+sexMap = {1: "1  (Male)", 2: "2  (Female)", 3: "Unknown"}
+ageMap = {1: "01  (0 - 5)",\
+          2: "02  (6 - 10)",\
+          3: "03  (11 - 15)",\
+          4: "04  (16 - 20)",\
+          5: "05  (21 - 25)",\
+          6: "06  (26 - 35)",\
+          7: "07  (36 - 45)",\
+          8: "08  (46 - 55)",\
+          9: "09  (56 - 65)",\
+          10: "10  (66 - 75)",\
+          11: "11  (Over 75)",
+          -1: "unknown"}
 
 consumer_key, consumer_secret, access_token, access_token_secret = pickle.load(open("apikeys.bin", "rb")) 
 
@@ -93,9 +108,11 @@ def tweet(status, replyto=None, imgfilename=None):
             print(e)
             stat = None
     return stat
-def casualtyDesc(gender, age_band):
+def personDesc(gender, age_band):
     if age_band in ("01  (0 - 5)", "02  (6 - 10)", "03  (11 - 15)"):
         return "a child"
+    if gender in ("Unknown") or age_band in ("unknown"):
+        return "an unknown driver"
     return "%s %s" % (translations[age_band], translations[gender])
 
 def readKSIData(fn):
@@ -125,6 +142,8 @@ def addVehicleData(ksiData, vehData):
     for kd in ksiData:
         assert kd["Accident_Index"] in vdict
         kd["Vehicle_Type"] = [int(v["Vehicle_Type"]) for v in vdict[kd["Accident_Index"]]]
+        kd["Sex_of_Driver"] = [sexMap[int(v["Sex_of_Driver"])] for v in vdict[kd["Accident_Index"]]]
+        kd["Age_Band_of_Driver"] = [ageMap[int(v["Age_Band_of_Driver"])] for v in vdict[kd["Accident_Index"]]]
 
 def sortByDateTime(ksiData):
     sortedksiData = []
@@ -144,8 +163,10 @@ def translate(phrase):
 
 
 def composeTweet(eventDate, record):
+    templ0 = "Today, at %s, %s ago%s, %s was seriously injured when %s driving a %s collided into %s."
     tweetContent = []
-    cd = casualtyDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
+    cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
+    dd = personDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0])
     pronoun = translate(cd.split(" ")[-1])
     lat, lon = record["Latitude"], record["Longitude"]
     streetname = getNearestStreet(lat, lon)
@@ -157,11 +178,17 @@ def composeTweet(eventDate, record):
             streetinfo = " on %s" % (streetname)
     else:
         streetinfo = ""
-    tweetContent.append("Today, at %s, %d year(s) ago%s, %s was seriously injured when a %s collided into %s." % (\
+    yearsago = datetime.datetime.now().year - eventDate.year
+    if yearsago == 1:
+        yearsago = "%d year" % yearsago
+    else:
+        yearsago = "%d years" % yearsago
+    tweetContent.append(templ0 % (\
             record['Time'], \
-            datetime.datetime.now().year - eventDate.year, \
+            yearsago, \
             streetinfo, \
             cd, \
+            dd, \
             vehicle_type[record["Vehicle_Type"][0]][1], \
             pronoun)) 
     return ''.join(tweetContent)
@@ -173,10 +200,24 @@ if __name__ == "__main__":
     ksiData = readKSIData("2016_05.tsv")
     addVehicleData(ksiData, r"Veh.csv")
     sortedksiData = sortByDateTime(ksiData)
-    for i, de in enumerate(sortedksiData):
+    i = 0
+    while True:
+        de = sortedksiData[i]
         date, event = de
         now = datetime.datetime.now()
-        print (date)
         if date.month == now.month and date.day == now.day:
-            print(now - date)
-            print(i, composeTweet(date, event))
+            cont = composeTweet(date, event)
+            secondsWait = (3600 * date.time().hour + 60 * date.time().minute) - \
+                          (3600 * now.time().hour + 60 * now.time().minute)
+            print("seconds to wait: ", secondsWait)
+            if secondsWait <= 0:
+                tweet(cont)
+
+            else:
+                t = threading.Timer(secondsWait - 2, tweet, [cont])
+                print ("Waiting to tweet: \n",cont)
+                t.start()
+                t.join()
+        i += 1
+        if i == len(sortedksiData):
+            i = 0
