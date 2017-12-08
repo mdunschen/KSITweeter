@@ -56,6 +56,8 @@ translations = {"2  (Female)": "woman",
                 "09  (56 - 65)": "a middle-aged",
                 "10  (66 - 75)": "an elderly",
                 "11  (Over 75)": "an elderly",
+                "1  (Fatal)": "killed",
+                "2  (Serious)": "seriously injured",
                 "-1":"a"}
 
 sexMap = {1: "1  (Male)", 2: "2  (Female)", 3: "Unknown"}
@@ -168,11 +170,12 @@ def translate(phrase):
 
 
 def composeTweet(eventDate, record):
-    templ0 = "Today, at %s, %s ago%s, %s was seriously injured when %s driving a %s collided into %s."
+    templ0 = "Today, at %s, %s ago%s, %s was %s when %s driving a %s collided into %s."
     tweetContent = []
     cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
     dd = personDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0])
     pronoun = translate(cd.split(" ")[-1])
+    fatal = translate(record["Casualty_Severity"])
     lat, lon = record["Latitude"], record["Longitude"]
     streetname = getNearestStreet(lat, lon)
     if streetname:
@@ -193,6 +196,7 @@ def composeTweet(eventDate, record):
             yearsago, \
             streetinfo, \
             cd, \
+            fatal, \
             dd, \
             vehicle_type[record["Vehicle_Type"][0]][1], \
             pronoun)) 
@@ -225,6 +229,7 @@ if __name__ == "__main__":
         print("seconds to wait: ", secondsWait)
         cont = composeTweet(date, event)
         if secondsWait <= 0:
+            print ("Immediate tweet: \n",cont)
             tweet(cont)
 
         else:
