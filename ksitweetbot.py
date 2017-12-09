@@ -206,8 +206,8 @@ def composeTweet(eventDate, record):
 
 
 if __name__ == "__main__":
-    ksiData = readKSIData("2016_05.tsv")
-    addVehicleData(ksiData, r"Veh.csv")
+    ksiData = readKSIData("2016/2016_05.tsv")
+    addVehicleData(ksiData, "2016/Veh.csv")
     sortedksiData = sortByDateTime(ksiData)
     now = datetime.datetime.now()
     
