@@ -15,27 +15,27 @@ import tweepy
 from locService import getNearestStreet, getPostCode
 
 vehicle_type = {
-    1:("Pedal cycle","bicycle"),\
-    2:("Motorcycle 50cc and under","moped"),\
-    3:("Motorcycle 125cc and under","motorbike"),\
-    4:("Motorcycle over 125cc and up to 500cc","motorbike"),\
-    5:("Motorcycle over 500cc","motorbike"),\
-    8:("Taxi/Private hire car","taxi"),\
-    9:("Car","car"),\
-    10:("Minibus (8 - 16 passenger seats)","van"),\
-    11:("Bus or coach (17 or more pass seats)","bus"),\
-    16:("Ridden horse","horse"),\
-    17:("Agricultural vehicle","tractor"),\
-    18:("Tram","tram"),\
-    19:("Van / Goods 3.5 tonnes mgw or under","van"),\
-    20:("Goods over 3.5t. and under 7.5t","lorry"),\
-    21:("Goods 7.5 tonnes mgw and over","lorry"),\
-    22:("Mobility scooter","mobility scooter"),\
-    23:("Electric motorcycle","motorbike"),\
-    90:("Other vehicle","vehicle"),\
-    97:("Motorcycle - unknown cc","motorbike"),\
-    98:("Goods vehicle - unknown weight","lorry"),\
-    -1:("Data missing or out of range","vehicle")}
+    1:("Pedal cycle","bicycle", "rider"),\
+    2:("Motorcycle 50cc and under","moped", "rider"),\
+    3:("Motorcycle 125cc and under","motorbike", "rider"),\
+    4:("Motorcycle over 125cc and up to 500cc","motorbike", "rider"),\
+    5:("Motorcycle over 500cc","motorbike", "rider"),\
+    8:("Taxi/Private hire car","taxi", "driver"),\
+    9:("Car","car", "driver"),\
+    10:("Minibus (8 - 16 passenger seats)","van", "driver"),\
+    11:("Bus or coach (17 or more pass seats)","bus", "driver"),\
+    16:("Ridden horse","horse", "rider"),\
+    17:("Agricultural vehicle","tractor", "driver"),\
+    18:("Tram", "tram", ""),\
+    19:("Van / Goods 3.5 tonnes mgw or under","van", "driver"),\
+    20:("Goods over 3.5t. and under 7.5t","lorry", "driver"),\
+    21:("Goods 7.5 tonnes mgw and over","lorry", "driver"),\
+    22:("Mobility scooter","mobility scooter", "rider"),\
+    23:("Electric motorcycle","motorbike", "rider"),\
+    90:("Other vehicle", "", "driver"),\
+    97:("Motorcycle - unknown cc","motorbike", "rider"),\
+    98:("Goods vehicle - unknown weight","lorry", "driver"),\
+    -1:("Data missing or out of range","", "driver")}
 
 
 
@@ -44,21 +44,23 @@ translations = {"2  (Female)": "woman",
                 "1  (Male)": "man",
                 "woman": "her",
                 "man": "him",
-                "child": "it",
-                "01  (0 - 5)": "a",
-                "02  (6 - 10)": "a",
-                "03  (11 - 15)": "a",
-                "04  (16 - 20)": "a teenage",
-                "05  (21 - 25)": "a",
-                "06  (26 - 35)": "a",
-                "07  (36 - 45)": "a",
-                "08  (46 - 55)": "a",
-                "09  (56 - 65)": "a middle-aged",
-                "10  (66 - 75)": "an elderly",
-                "11  (Over 75)": "an elderly",
+                "child": "her/him",
+                "01  (0 - 5)": "",
+                "02  (6 - 10)": "",
+                "03  (11 - 15)": "",
+                "04  (16 - 20)": "teenage",
+                "05  (21 - 25)": "young",
+                "06  (26 - 35)": "",
+                "07  (36 - 45)": "",
+                "08  (46 - 55)": "",
+                "09  (56 - 65)": "middle-aged",
+                "10  (66 - 75)": "elderly",
+                "11  (Over 75)": "elderly",
                 "1  (Fatal)": "killed",
                 "2  (Serious)": "seriously injured",
-                "-1":"a"}
+                "0  (Pedestrian)": "walking on",
+                "1  (Cyclist)": "cycling on",
+                "-1":""}
 
 sexMap = {1: "1  (Male)", 2: "2  (Female)", 3: "Unknown"}
 ageMap = {1: "01  (0 - 5)",\
@@ -84,20 +86,24 @@ def twitterAPI():
 
 
 
-def tweet(status, replyto=None, imgfilename=None):
-    if not (status or imgfilename):
-        return
+def tweetChars(status):
     urls = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', status)
-    print("urls = ", urls)
     # take out all url texts from status for count, all urls count as 23
     rstat = status
     for u in urls:
         rstat = rstat.replace(u, '')
     nchars = len(rstat) + 23 * len(urls)
+    return nchars
+
+def tweet(status, replyto=None, imgfilename=None):
+    if not (status or imgfilename):
+        return
+    nchars = tweetChars(status)
+    print("characters: ", nchars)
     if nchars > 140:
         print("Tweet too long")
         
-    #print(status)
+    print(status)
     
     api = twitterAPI()
     if (imgfilename and os.path.isfile(imgfilename)):
@@ -115,11 +121,20 @@ def tweet(status, replyto=None, imgfilename=None):
             stat = None
     return stat
 
+def multiTweet(stats):
+    r = None
+    for s in stats:
+        print(s)
+        r = tweet(s, r)
+
+def driverDesc(gender, age_band, vehicleType):
+    return "%s %s" % (vehicle_type[vehicleType][1], vehicle_type[vehicleType][2])
+    
 def personDesc(gender, age_band):
     if age_band in ("01  (0 - 5)", "02  (6 - 10)", "03  (11 - 15)"):
-        return "a child"
+        return "child"
     if gender in ("Unknown") or age_band in ("unknown"):
-        return "an unknown driver"
+        return "unknown driver"
     return "%s %s" % (translations[age_band], translations[gender])
 
 def readKSIData(fn):
@@ -170,10 +185,10 @@ def translate(phrase):
 
 
 def composeTweet(eventDate, record):
-    templ0 = "Today, at %s, %s ago%s, %s was %s when %s driving a %s collided into %s."
+    templ0 = "Today, %s, %s ago %s: %s %s %s was %s by %s"
     tweetContent = []
     cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
-    dd = personDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0])
+    dd = driverDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0], record["Vehicle_Type"][0])
     pronoun = translate(cd.split(" ")[-1])
     severity = translate(record["Casualty_Severity"])
     lat, lon = record["Latitude"], record["Longitude"]
@@ -181,11 +196,12 @@ def composeTweet(eventDate, record):
     if streetname:
         pc = getPostCode(lat, lon)
         if pc:
-            streetinfo = " on %s (%s)" % (streetname, pc)
+            streetinfo = "%s (%s)" % (streetname, pc)
         else:
-            streetinfo = " on %s" % (streetname)
+            streetinfo = "%s" % (streetname)
     else:
         streetinfo = ""
+    casualtyType = translate(record["Casualty_Type"])
     yearsago = datetime.datetime.now().year - eventDate.year
     if yearsago == 1:
         yearsago = "%d year" % yearsago
@@ -194,15 +210,32 @@ def composeTweet(eventDate, record):
     tweetContent.append(templ0 % (\
             record['Time'], \
             yearsago, \
-            streetinfo, \
+            "(%d/%d/%d)" % (eventDate.day, eventDate.month, eventDate.year-2000), \
             cd, \
+            casualtyType, \
+            streetinfo, \
             severity, \
-            dd, \
-            vehicle_type[record["Vehicle_Type"][0]][1], \
-            pronoun)) 
+            dd))
     return ''.join(tweetContent)
-        
 
+def splitTweetToMultiple(cont, urlsToAdd, tagsToAdd):
+    cont = ''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])
+    status = []
+    icount = 1
+    while cont:
+        words = cont.split(' ')
+        singleTweet = ['%d:' % icount]
+        icount += 1
+        while words and tweetChars(' '.join(singleTweet)) < 140:
+            singleTweet.append(words.pop(0))
+        if tweetChars(' '.join(singleTweet)) > 140:
+            words.insert(0, singleTweet.pop())
+        assert tweetChars(' '.join(singleTweet)) <= 140
+        status.append(' '.join(singleTweet))
+        # now rebuild cont from the rest
+        cont = ' '.join(words)
+        print("Remaining: ", cont)
+    return status
 
 
 if __name__ == "__main__":
@@ -222,19 +255,30 @@ if __name__ == "__main__":
         de = sortedksiData[i]
         date, event = de
 
-    # tweet all of today'e events.
+    # tweet all of today's events.
     while date.month == now.month and date.day == now.day:
         secondsWait = (3600 * date.time().hour + 60 * date.time().minute) - \
                       (3600 * now.time().hour + 60 * now.time().minute)
         print("seconds to wait: ", secondsWait)
         cont = composeTweet(date, event)
+        urlsToAdd = [r" http://wacm.org.uk"]
+        tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
+        totalChars = tweetChars(cont) + tweetChars(' '.join(urlsToAdd + tagsToAdd)) 
+        print("totalChars = ", totalChars)
+        if totalChars <= 140:
+            status = [''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])]
+        else:
+            # split into multiple tweets
+            status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
+
         if secondsWait <= 0:
-            print ("Immediate tweet: \n",cont)
-            tweet(cont)
+            print ("Immediate tweet: \n", status)
+            multiTweet(status)
 
         else:
-            t = threading.Timer(secondsWait - 2, tweet, [cont])
-            print ("Waiting to tweet: \n",cont)
+            assert 0
+            t = threading.Timer(secondsWait - 2, multiTweet, [status])
+            print ("Waiting to tweet: \n",status)
             t.start()
             t.join()
             
