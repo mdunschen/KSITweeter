@@ -58,8 +58,9 @@ translations = {"2  (Female)": "woman",
                 "11  (Over 75)": "elderly",
                 "1  (Fatal)": "killed",
                 "2  (Serious)": "seriously injured",
-                "0  (Pedestrian)": "walking on",
-                "1  (Cyclist)": "cycling on",
+                "0  (Pedestrian)": "walking ",
+                "1  (Cyclist)": "cycling ",
+                "3  ('Motorcyclist')": "riding ",
                 "-1":""}
 
 sexMap = {1: "1  (Male)", 2: "2  (Female)", 3: "Unknown"}
@@ -196,9 +197,10 @@ def composeTweet(eventDate, record):
     if streetname:
         pc = getPostCode(lat, lon)
         if pc:
-            streetinfo = "%s (%s)" % (streetname, pc)
+            streetinfo = "on %s (%s)" % (streetname, pc)
         else:
-            streetinfo = "%s" % (streetname)
+            streetinfo = "on %s" % (streetname)
+
     else:
         streetinfo = ""
     casualtyType = translate(record["Casualty_Type"])
@@ -276,7 +278,6 @@ if __name__ == "__main__":
             multiTweet(status)
 
         else:
-            assert 0
             t = threading.Timer(secondsWait - 2, multiTweet, [status])
             print ("Waiting to tweet: \n",status)
             t.start()
