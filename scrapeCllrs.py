@@ -4,6 +4,7 @@
 import urllib
 import urllib.request as request
 import re
+import html
 
 councillorURLS = []
 # Liverpool, Knowlsey, St Helens, Sefton, Wirral, (Halton?)
@@ -17,15 +18,15 @@ councillorURLS.append(r"http://councillors.halton.gov.uk/mgFindMember.aspx")
 
 def writeToFile(allWards):
     f = open("allcouncillors.tsv", "w")
-    f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "URL Councillor", "Name Councillor"))
+    f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "Name Councillor", "URL Councillor"))
     for townUrl in allWards:
         name = allWards[townUrl]["name"]
         wards = allWards[townUrl]["wards"]
         for ward in wards:
-            wardname = ward["name"]
+            wardname = html.unescape(ward["name"])
             wardurl = ward["url"]
             for cllr in ward["cllrs"]:
-                f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (name, townUrl, wardname, wardurl, cllr, ward["cllrs"][cllr]))
+                f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (name, townUrl, wardname, wardurl, html.unescape(ward["cllrs"][cllr]), cllr))
     f.close()
 
 def getWard(urlstr, k):
