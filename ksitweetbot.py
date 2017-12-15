@@ -48,14 +48,14 @@ translations = {"2  (Female)": "woman",
                 "01  (0 - 5)": "",
                 "02  (6 - 10)": "",
                 "03  (11 - 15)": "",
-                "04  (16 - 20)": "teenage",
-                "05  (21 - 25)": "young",
+                "04  (16 - 20)": "A teenage",
+                "05  (21 - 25)": "A young",
                 "06  (26 - 35)": "",
                 "07  (36 - 45)": "",
                 "08  (46 - 55)": "",
-                "09  (56 - 65)": "middle-aged",
-                "10  (66 - 75)": "elderly",
-                "11  (Over 75)": "elderly",
+                "09  (56 - 65)": "A middle-aged",
+                "10  (66 - 75)": "An elderly",
+                "11  (Over 75)": "An elderly",
                 "1  (Fatal)": "killed",
                 "2  (Serious)": "seriously injured",
                 "0  (Pedestrian)": "walking ",
@@ -129,13 +129,13 @@ def multiTweet(stats):
         r = tweet(s, r)
 
 def driverDesc(gender, age_band, vehicleType):
-    return "%s %s" % (vehicle_type[vehicleType][1], vehicle_type[vehicleType][2])
+    return "a %s %s" % (vehicle_type[vehicleType][1], vehicle_type[vehicleType][2])
     
 def personDesc(gender, age_band):
     if age_band in ("01  (0 - 5)", "02  (6 - 10)", "03  (11 - 15)"):
-        return "child"
+        return "A child"
     if gender in ("Unknown") or age_band in ("unknown"):
-        return "unknown driver"
+        return "an unknown driver"
     return "%s %s" % (translations[age_band], translations[gender])
 
 def readKSIData(fn):
@@ -186,7 +186,6 @@ def translate(phrase):
 
 
 def composeTweet(eventDate, record):
-    templ0 = "Today, %s, %s ago %s: %s %s %s was %s by %s"
     tweetContent = []
     cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
     dd = driverDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0], record["Vehicle_Type"][0])
@@ -209,15 +208,27 @@ def composeTweet(eventDate, record):
         yearsago = "%d year" % yearsago
     else:
         yearsago = "%d years" % yearsago
-    tweetContent.append(templ0 % (\
-            record['Time'], \
-            yearsago, \
-            "(%d/%d/%d)" % (eventDate.day, eventDate.month, eventDate.year-2000), \
+    templ0 = "Today, %s, %s ago %s: %s %s %s was %s by %s"
+    templ1 = "%s was %s today %s ago (%s, %s) %s%s by %s"
+    tweetContent.append(templ1 % (\
             cd, \
+            severity, \
+            yearsago, \
+            record['Time'], \
+            "%d/%d/%d" % (eventDate.day, eventDate.month, eventDate.year-2000), \
             casualtyType, \
             streetinfo, \
-            severity, \
             dd))
+    if 0:
+        tweetContent.append(templ0 % (\
+                record['Time'], \
+                yearsago, \
+                "(%d/%d/%d)" % (eventDate.day, eventDate.month, eventDate.year-2000), \
+                cd, \
+                casualtyType, \
+                streetinfo, \
+                severity, \
+                dd))
     return ''.join(tweetContent)
 
 def splitTweetToMultiple(cont, urlsToAdd, tagsToAdd):
