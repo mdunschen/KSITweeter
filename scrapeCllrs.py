@@ -8,17 +8,17 @@ import html
 
 councillorURLS = []
 # Liverpool, Knowlsey, St Helens, Sefton, Wirral, (Halton?)
+councillorURLS.append(r"https://democracy.wirral.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"https://www.sthelens.gov.uk/council/councillors-elections-voting/find-your-local-councillor/")
 councillorURLS.append(r"http://councillors.liverpool.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"https://councillors.knowsley.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"http://modgov.sefton.gov.uk/moderngov/mgFindMember.aspx")
-councillorURLS.append(r"https://democracy.wirral.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"http://councillors.halton.gov.uk/mgFindMember.aspx")
 
 
 def writeToFile(allWards):
     f = open("allcouncillors.tsv", "w")
-    f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "Name Councillor", "URL Councillor"))
+    f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "Name Councillor", "Email", "URL Councillor"))
     for townUrl in allWards:
         name = allWards[townUrl]["name"]
         wards = allWards[townUrl]["wards"]
@@ -26,8 +26,22 @@ def writeToFile(allWards):
             wardname = html.unescape(ward["name"])
             wardurl = ward["url"]
             for cllr in ward["cllrs"]:
-                f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (name, townUrl, wardname, wardurl, html.unescape(ward["cllrs"][cllr]), cllr))
+                f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (name, townUrl, wardname, wardurl, html.unescape(ward["cllrs"][cllr]['name']), ward["cllrs"][cllr]['address'], cllr))
     f.close()
+
+def getCllrAddressInfo(cllrUrl, cllrName):
+    print("url = ", cllrUrl)
+    r = request.urlopen(cllrUrl).read().decode('utf-8')
+    emails = re.findall(r"mailto:([\w-]+[\'\w\.]*[\w-]+\@[\w-]+\.+[\w-]+\.+[\w-]+)", r, re.MULTILINE)
+    print(cllrName, emails)
+    if len(emails) > 1:
+        emails = [e for e in emails if e[-6:] == 'gov.uk']
+    if len(set(emails)) > 1:
+        # look for part of name in email
+        emails = [e for e in emails if cllrName.split(' ')[-1].lower() in e]
+    assert(len(emails) in (0, 1) or len(set(emails)) == 1), emails
+    return {'email':emails and emails[0] or ''}
+
 
 def getWard(urlstr, k):
     if type(k) == type(1):
@@ -40,7 +54,7 @@ def getCouncillors(urlstr, k):
     if type(k) == type(1):
         r = request.urlopen(wardUrlStr).read().decode('utf-8')
         councillors = re.findall("\<a  href=\"mgUserInfo\.aspx\?UID=([0-9 ]*)\".*\>(.*)\<\/a\>", r, re.MULTILINE)
-        return {"%s/mgUserInfo.aspx?UID=%d" % (re.match("(https?\:\/\/[a-z]*\.[a-z]*\.[a-z]*\.uk)\/", urlstr).group(1), int(o[0].strip())):o[1] for o in councillors}
+        cllrs = {"%s/mgUserInfo.aspx?UID=%d" % (re.match("(https?\:\/\/[a-z]*\.[a-z]*\.[a-z]*\.uk)\/", urlstr).group(1), int(o[0].strip())):{'name':o[1]} for o in councillors}
 
     else:
         r = request.urlopen(wardUrlStr).read().decode('utf-8')
@@ -48,7 +62,11 @@ def getCouncillors(urlstr, k):
         ids = re.findall("\<a href=\".*mgUserInfo\.aspx\?UID=([0-9 ]*)\&?.*\".*\>", r, re.MULTILINE)
         assert(len(names) == len(ids))
         councillors = zip(ids, names)
-        return {"%s/mgUserInfo.aspx?UID=%d" % ("https://moderngov.sthelens.gov.uk", int(o[0].strip())):o[1] for o in councillors}
+        cllrs = {"%s/mgUserInfo.aspx?UID=%d" % ("http://moderngov.sthelens.gov.uk", int(o[0].strip())):{'name':o[1]} for o in councillors}
+
+    for url in cllrs:
+        cllrs[url]['address'] = getCllrAddressInfo(url, cllrs[url]['name'])
+    return cllrs
 
 def getAllCouncillors():
     allWards = {}
