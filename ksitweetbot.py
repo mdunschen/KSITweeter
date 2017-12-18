@@ -45,14 +45,14 @@ translations = {"2  (Female)": "woman",
                 "woman": "her",
                 "man": "him",
                 "child": "her/him",
-                "01  (0 - 5)": "",
-                "02  (6 - 10)": "",
-                "03  (11 - 15)": "",
+                "01  (0 - 5)": "A",
+                "02  (6 - 10)": "A",
+                "03  (11 - 15)": "A",
                 "04  (16 - 20)": "A teenage",
                 "05  (21 - 25)": "A young",
-                "06  (26 - 35)": "",
-                "07  (36 - 45)": "",
-                "08  (46 - 55)": "",
+                "06  (26 - 35)": "A",
+                "07  (36 - 45)": "A",
+                "08  (46 - 55)": "A",
                 "09  (56 - 65)": "A middle-aged",
                 "10  (66 - 75)": "An elderly",
                 "11  (Over 75)": "An elderly",
@@ -186,6 +186,8 @@ def translate(phrase):
 
 
 def composeTweet(eventDate, record):
+    if record['Casualty_Type'] not in ('1  (Cyclist)', '0  (Pedestrian)'):
+        return
     tweetContent = []
     cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
     dd = driverDesc(record["Sex_of_Driver"][0], record["Age_Band_of_Driver"][0], record["Vehicle_Type"][0])
@@ -250,8 +252,7 @@ def splitTweetToMultiple(cont, urlsToAdd, tagsToAdd):
         print("Remaining: ", cont)
     return status
 
-
-if __name__ == "__main__":
+def tweetTodaysEvents():
     ksiData = readKSIData("2016/2016_05.tsv")
     addVehicleData(ksiData, "2016/Veh.csv")
     sortedksiData = sortByDateTime(ksiData)
@@ -274,28 +275,42 @@ if __name__ == "__main__":
                       (3600 * now.time().hour + 60 * now.time().minute)
         print("seconds to wait: ", secondsWait)
         cont = composeTweet(date, event)
-        urlsToAdd = [r" http://wacm.org.uk"]
-        tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
-        totalChars = tweetChars(cont) + tweetChars(' '.join(urlsToAdd + tagsToAdd)) 
-        print("totalChars = ", totalChars)
-        if totalChars <= 140:
-            status = [''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])]
-        else:
-            # split into multiple tweets
-            status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
+        if cont:
+            urlsToAdd = [r" http://wacm.org.uk"]
+            tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
+            totalChars = tweetChars(cont) + tweetChars(' '.join(urlsToAdd + tagsToAdd)) 
+            print("totalChars = ", totalChars)
+            if totalChars <= 140:
+                status = [''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])]
+            else:
+                # split into multiple tweets
+                status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
 
-        if secondsWait <= 0:
-            print ("Immediate tweet: \n", status)
-            multiTweet(status)
+            if secondsWait <= 0:
+                print ("Immediate tweet: \n", status)
+                multiTweet(status)
 
-        else:
-            t = threading.Timer(secondsWait - 2, multiTweet, [status])
-            print ("Waiting to tweet: \n",status)
-            t.start()
-            t.join()
-            
+            else:
+                t = threading.Timer(secondsWait - 2, multiTweet, [status])
+                print ("Waiting to tweet: \n",status)
+                t.start()
+                t.join()
+                
         i += 1
         if i == len(sortedksiData):
             i = 0
         de = sortedksiData[i]
         date, event = de
+		
+def findCouncillorOnTwitter(name):
+	api = twitterAPI()
+	r = api.search_users(name)
+	r = [rr for rr in r if (('liverpool' in rr.description.lower()) or ('cllr' in rr.description.lower()))]
+	for u in r:
+		print(u.name, u.description)
+
+
+
+if __name__ == "__main__":
+	tweetTodaysEvents()
+	#findCouncillorOnTwitter("James Noakes")
