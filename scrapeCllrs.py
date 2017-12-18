@@ -6,6 +6,8 @@ import urllib.request as request
 import re
 import html
 
+from ksitweetbot import findCouncillorOnTwitter
+
 councillorURLS = []
 # Liverpool, Knowlsey, St Helens, Sefton, Wirral, (Halton?)
 councillorURLS.append(r"https://democracy.wirral.gov.uk/mgFindMember.aspx")
@@ -18,7 +20,7 @@ councillorURLS.append(r"http://councillors.halton.gov.uk/mgFindMember.aspx")
 
 def writeToFile(allWards):
     f = open("allcouncillors.tsv", "w")
-    f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "Name Councillor", "Email", "URL Councillor"))
+    f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "Name Councillor", "Email", "URL Councillor", "twitter", "twitter_desc", "twitter_url"))
     for townUrl in allWards:
         name = allWards[townUrl]["name"]
         wards = allWards[townUrl]["wards"]
@@ -26,7 +28,7 @@ def writeToFile(allWards):
             wardname = html.unescape(ward["name"])
             wardurl = ward["url"]
             for cllr in ward["cllrs"]:
-                f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (name, townUrl, wardname, wardurl, html.unescape(ward["cllrs"][cllr]['name']), ward["cllrs"][cllr]['address'], cllr))
+                f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (name, townUrl, wardname, wardurl, html.unescape(ward["cllrs"][cllr]['name']), ward["cllrs"][cllr]['address'], cllr, ward["cllrs"][cllr]['twitter']['handle'], ward["cllrs"][cllr]['twitter']['desc'], ward["cllrs"][cllr]['twitter']['link']))
     f.close()
 
 def getCllrAddressInfo(cllrUrl, cllrName):
@@ -70,7 +72,7 @@ def getCouncillors(urlstr, k):
 
 def getAllCouncillors():
     allWards = {}
-    for urlstr in councillorURLS:
+    for urlstr in councillorURLS[:1]:
         town = re.match("https?\:\/\/[a-z]*\.([a-z]*)\.", urlstr).group(1)
         print(town)
         allWards[urlstr] = {"name":town}
@@ -92,7 +94,17 @@ def getAllCouncillors():
             print("  ", name)
             wardurl = getWard(urlstr, k)
             cllrs = getCouncillors(urlstr, k)
-            wards.append({"name":name, "url":wardurl, "cllrs":cllrs})
+            wards.append({"name":html.unescape(name), "url":wardurl, "cllrs":cllrs})
+            for c  in cllrs:
+                cllrName = html.unescape(cllrs[c]['name'])
+                lastName = (cllrName.split(' '))[-1]
+                wardName = html.unescape(name)
+                twitterUser = findCouncillorOnTwitter(lastName, town, wardName) or findCouncillorOnTwitter(cllrName.split(' ')[1:], town, wardName)
+                if twitterUser:
+                    cllrs[c]['twitter'] = {"handle":"@%s" % twitterUser.screen_name, "desc":twitterUser.description, "link":"https://twitter.com/%s" % twitterUser.screen_name}
+                else:
+                    cllrs[c]['twitter'] = {"handle":'', "desc":'', "link":''}
+
         allWards[urlstr]["wards"] = wards
     return allWards
 

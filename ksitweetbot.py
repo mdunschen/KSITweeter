@@ -82,7 +82,7 @@ consumer_key, consumer_secret, access_token, access_token_secret = pickle.load(o
 def twitterAPI():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth)
+    api = tweepy.API(auth, wait_on_rate_limit = True)
     return api
 
 
@@ -301,16 +301,25 @@ def tweetTodaysEvents():
             i = 0
         de = sortedksiData[i]
         date, event = de
-		
-def findCouncillorOnTwitter(name):
-	api = twitterAPI()
-	r = api.search_users(name)
-	r = [rr for rr in r if (('liverpool' in rr.description.lower()) or ('cllr' in rr.description.lower()))]
-	for u in r:
-		print(u.name, u.description)
+        
+def findCouncillorOnTwitter(name, council, ward):
+    api = twitterAPI()
+    rlast = []
+    for r in  tweepy.Cursor(api.search_users, "%s" % (name)).pages(10):
+        r = [u for u in r if (council.lower() in u.description.lower() or ward.lower() in u.description.lower())]
+        if r and len(r) == 1:
+            return r[0]
 
 
 
 if __name__ == "__main__":
-	tweetTodaysEvents()
-	#findCouncillorOnTwitter("James Noakes")
+    #tweetTodaysEvents()
+    result = findCouncillorOnTwitter("James Noakes", "Liverpool", "Clubmoor") 
+    if result:
+        print(result.screen_name, result.description)
+    result = findCouncillorOnTwitter("Crone", "Liverpool", "Michaels") 
+    if result:
+        print(result.screen_name, result.description)
+    result = findCouncillorOnTwitter("O'Byrne", "Liverpool", "Warbreck") 
+    if result:
+        print(result.screen_name, result.description)
