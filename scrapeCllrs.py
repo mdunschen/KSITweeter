@@ -72,7 +72,7 @@ def getCouncillors(urlstr, k):
 
 def getAllCouncillors():
     allWards = {}
-    for urlstr in councillorURLS[:1]:
+    for urlstr in councillorURLS:
         town = re.match("https?\:\/\/[a-z]*\.([a-z]*)\.", urlstr).group(1)
         print(town)
         allWards[urlstr] = {"name":town}
