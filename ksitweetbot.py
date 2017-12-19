@@ -313,13 +313,14 @@ def findCouncillorOnTwitter(name, council, ward):
 
 
 if __name__ == "__main__":
-    #tweetTodaysEvents()
-    result = findCouncillorOnTwitter("James Noakes", "Liverpool", "Clubmoor") 
-    if result:
-        print(result.screen_name, result.description)
-    result = findCouncillorOnTwitter("Crone", "Liverpool", "Michaels") 
-    if result:
-        print(result.screen_name, result.description)
-    result = findCouncillorOnTwitter("O'Byrne", "Liverpool", "Warbreck") 
-    if result:
-        print(result.screen_name, result.description)
+    tweetTodaysEvents()
+    if 0:
+        result = findCouncillorOnTwitter("James Noakes", "Liverpool", "Clubmoor") 
+        if result:
+            print(result.screen_name, result.description)
+        result = findCouncillorOnTwitter("Crone", "Liverpool", "Michaels") 
+        if result:
+            print(result.screen_name, result.description)
+        result = findCouncillorOnTwitter("O'Byrne", "Liverpool", "Warbreck") 
+        if result:
+            print(result.screen_name, result.description)
