@@ -12,7 +12,7 @@ import threading
 sys.path.append("C:\\Program Files\\Anaconda3\\envs\\tensorflow\\lib\\site-packages")
 import tweepy
 
-from locService import getNearestStreet, getPostCode
+from locService import *
 
 vehicle_type = {
     1:("Pedal cycle","bicycle", "rider"),\
@@ -203,7 +203,12 @@ def composeTweet(eventDate, record):
             streetinfo = "on %s" % (streetname)
 
     else:
-        streetinfo = ""
+        district = getDistrict(lat, lon)
+        pc = getPostCode(lat, lon)
+        if district and pc:
+            streetinfo = "in %s (%s)" % (district, pc)
+        else:
+            streetinfo = ""
     casualtyType = translate(record["Casualty_Type"])
     yearsago = datetime.datetime.now().year - eventDate.year
     if yearsago == 1:
