@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import urllib
 import urllib.request as request
 import json
@@ -10,28 +12,26 @@ def getNearestStreet(lat, lon):
         return cont["waypoints"][0]["name"]
 
 
-def getPostCode(lat, lon):
+def getLocInformation(lat, lon, infokey):
     urlstr = "http://api.postcodes.io/postcodes?lat=%s&lon=%s" % (lat, lon)
     r = request.urlopen(urlstr).read()
     cont = json.loads(r.decode('utf-8'))
-    print (cont["status"])
     if cont["status"] and cont["result"]:
-        return cont["result"][-1]["outcode"]
+        return cont["result"][-1][infokey]
+
+def getPostCode(lat, lon):
+    return getLocInformation(lat, lon, "outcode")
 
 def getWard(lat, lon):
-    urlstr = "http://api.postcodes.io/postcodes?lat=%s&lon=%s" % (lat, lon)
-    r = request.urlopen(urlstr).read()
-    cont = json.loads(r.decode('utf-8'))
-    print (cont["status"])
-    if cont["status"] and cont["result"]:
-        return cont["result"][-1]["admin_ward"]
+    return getLocInformation(lat, lon, "admin_ward")
+
+def getDistrict(lat, lon):
+    return getLocInformation(lat, lon, "admin_district")
+
 
 
 if __name__ == "__main__":
-    print(getNearestStreet("53.4025", "-2.9865"))
-    print(getPostCode("53.4025", "-2.9865"))
-    print(getWard("53.4025", "-2.9865"))
-    print(getNearestStreet("53.372420", "-2.861337"))
-    print(getPostCode("53.372420", "-2.861337"))
-    print(getWard("53.372420", "-2.861337"))
+    print(getWard("53.488609", "-2.885376"))
+    print(getPostCode("53.488609", "-2.885376"))
+    print(getDistrict("53.488609", "-2.885376"))
 
