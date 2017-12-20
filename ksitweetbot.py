@@ -211,7 +211,7 @@ def composeTweet(eventDate, record):
     else:
         yearsago = "%d years" % yearsago
     templ0 = "Today, %s, %s ago %s: %s %s %s was %s by %s"
-    templ1 = "%s was %s today %s ago (%s, %s) %s%s by %s"
+    templ1 = "%s was %s today %s ago (%s, %s) %s%s, by %s"
     tweetContent.append(templ1 % (\
             cd, \
             severity, \
@@ -276,7 +276,7 @@ def tweetTodaysEvents():
         print("seconds to wait: ", secondsWait)
         cont = composeTweet(date, event)
         if cont:
-            urlsToAdd = [r" http://wacm.org.uk"]
+            urlsToAdd = [' ', r"@livepedestrian", r"http://wacm.org.uk"]
             tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
             totalChars = tweetChars(cont) + tweetChars(' '.join(urlsToAdd + tagsToAdd)) 
             print("totalChars = ", totalChars)
