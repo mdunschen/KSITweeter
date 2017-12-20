@@ -5,18 +5,45 @@ import urllib
 import urllib.request as request
 import re
 import html
+import sqlite3
 
 from ksitweetbot import findCouncillorOnTwitter
 
 councillorURLS = []
 # Liverpool, Knowlsey, St Helens, Sefton, Wirral, (Halton?)
+councillorURLS.append(r"http://councillors.halton.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"https://democracy.wirral.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"https://www.sthelens.gov.uk/council/councillors-elections-voting/find-your-local-councillor/")
 councillorURLS.append(r"http://councillors.liverpool.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"https://councillors.knowsley.gov.uk/mgFindMember.aspx")
 councillorURLS.append(r"http://modgov.sefton.gov.uk/moderngov/mgFindMember.aspx")
-councillorURLS.append(r"http://councillors.halton.gov.uk/mgFindMember.aspx")
 
+
+def writeToDB(allWards, dbName):
+    db = sqlite3.connect(dbName)
+    c = db.cursor()
+    c.execute('''
+        CREATE TABLE cllrs(id INTEGER PRIMARY KEY, city TEXT, cityURL TEXT, wardName TEXT, wardURL TEXT, cllrName TEXT, cllrEmail TEXT, cllrURL TEXT, cllrTwitter TEXT, cllrTwitterDesc TEXT, cllrTwitterURL TEXT)
+        ''')
+    for townUrl in allWards:
+        name = allWards[townUrl]["name"]
+        wards = allWards[townUrl]["wards"]
+        for ward in wards:
+            wardName = html.unescape(ward["name"])
+            wardURL = ward["url"]
+            for cllr in ward["cllrs"]:
+                townName = name
+                cllrName = html.unescape(ward["cllrs"][cllr]['name'])
+                cllrEmail = ward["cllrs"][cllr]['address']['email']
+                cllrURL = cllr
+                cllrTwitter = ward["cllrs"][cllr]['twitter']['handle']
+                cllrTwitterDesc = ward["cllrs"][cllr]['twitter']['desc']
+                cllrTwitterURL = ward["cllrs"][cllr]['twitter']['link']
+                print(cllrName)
+                c.execute('''
+                    INSERT INTO cllrs(city, cityURL, wardName, wardURL, cllrName, cllrEmail, cllrURL, cllrTwitter, cllrTwitterDesc, cllrTwitterURL) VALUES(?,?,?,?,?,?,?,?,?,?)''', (townName, townUrl, wardName, wardURL, cllrName, cllrEmail, cllrURL, cllrTwitter, cllrTwitterDesc, cllrTwitterURL))
+    db.commit()
+    db.close()
 
 def writeToFile(allWards):
     f = open("allcouncillors.tsv", "w")
@@ -70,9 +97,9 @@ def getCouncillors(urlstr, k):
         cllrs[url]['address'] = getCllrAddressInfo(url, cllrs[url]['name'])
     return cllrs
 
-def getAllCouncillors():
+def getAllCouncillors(councils):
     allWards = {}
-    for urlstr in councillorURLS:
+    for urlstr in councils:
         town = re.match("https?\:\/\/[a-z]*\.([a-z]*)\.", urlstr).group(1)
         print(town)
         allWards[urlstr] = {"name":town}
@@ -109,7 +136,7 @@ def getAllCouncillors():
     return allWards
 
 if __name__ == "__main__":
-    allWards = getAllCouncillors()
-    writeToFile(allWards)
+    allWards = getAllCouncillors(councillorURLS)
+    writeToDB(allWards, "halton.db")
 
 
