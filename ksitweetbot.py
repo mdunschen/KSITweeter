@@ -187,6 +187,7 @@ def translate(phrase):
 
 def composeTweet(eventDate, record):
     if record['Casualty_Type'] not in ('1  (Cyclist)', '0  (Pedestrian)'):
+        print(record['Casualty_Type'])
         return
     tweetContent = []
     cd = personDesc(record["Sex_of_Casualty"], record["Age_Band_of_Casualty"])
@@ -239,6 +240,10 @@ def composeTweet(eventDate, record):
     return ''.join(tweetContent)
 
 def splitTweetToMultiple(cont, urlsToAdd, tagsToAdd):
+    totalChars = tweetChars(cont) + tweetChars(' '.join(urlsToAdd + tagsToAdd)) 
+    print("totalChars = ", totalChars)
+    if totalChars <= 140:
+        return [''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])]
     cont = ''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])
     status = []
     icount = 1
@@ -261,13 +266,13 @@ def tweetTodaysEvents():
     ksiData = readKSIData("2016/2016_05.tsv")
     addVehicleData(ksiData, "2016/Veh.csv")
     sortedksiData = sortByDateTime(ksiData)
-    now = datetime.datetime.now()
+    today = datetime.datetime.now()
     
     # scroll forward to today
     i = 0
     de = sortedksiData[i]
     date, event = de
-    while date.month < now.month or date.day < now.day:
+    while date.month < today.month or date.day < today.day:
         i += 1
         if i == len(sortedksiData):
             i = 0
@@ -275,7 +280,8 @@ def tweetTodaysEvents():
         date, event = de
 
     # tweet all of today's events.
-    while date.month == now.month and date.day == now.day:
+    while date.month == today.month and date.day == today.day:
+        now = datetime.datetime.now()
         secondsWait = (3600 * date.time().hour + 60 * date.time().minute) - \
                       (3600 * now.time().hour + 60 * now.time().minute)
         print("seconds to wait: ", secondsWait)
@@ -283,13 +289,9 @@ def tweetTodaysEvents():
         if cont:
             urlsToAdd = [' ', r"@livepedestrian", r"http://wacm.org.uk"]
             tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
-            totalChars = tweetChars(cont) + tweetChars(' '.join(urlsToAdd + tagsToAdd)) 
-            print("totalChars = ", totalChars)
-            if totalChars <= 140:
-                status = [''.join([cont + ' '.join(urlsToAdd + tagsToAdd)])]
-            else:
-                # split into multiple tweets
-                status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
+
+            # split into multiple tweets
+            status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
 
             if secondsWait <= 0:
                 print ("Immediate tweet: \n", status)
@@ -306,6 +308,7 @@ def tweetTodaysEvents():
             i = 0
         de = sortedksiData[i]
         date, event = de
+        print(date.day, date.month)
         
 def findCouncillorOnTwitter(name, council, ward):
     api = twitterAPI()
