@@ -3,6 +3,7 @@
 import urllib
 import urllib.request as request
 import json
+import sqlite3
 
 def getNearestStreet(lat, lon):
     urlstr = "http://router.project-osrm.org/nearest/v1/driving/%s,%s" % (lon, lat)
@@ -28,10 +29,24 @@ def getWard(lat, lon):
 def getDistrict(lat, lon):
     return getLocInformation(lat, lon, "admin_district")
 
+def getWardCllrs(ward):
+    db = sqlite3.connect("cllrs.db")
+    c = db.cursor()
+    c.execute("SELECT * FROM cllrs WHERE wardName=?",(ward,))
+    return c.fetchall()
+
+
+def getCouncillorTwitterHandles(lat, lon):
+    ward = getWard(lat, lon)
+    if ward:
+        return [c[8] for c in getWardCllrs(ward) if c[8] and (('councillor' in c[9].lower()) or ('cllr' in c[9].lower()))]
+
 
 
 if __name__ == "__main__":
-    print(getWard("53.488609", "-2.885376"))
-    print(getPostCode("53.488609", "-2.885376"))
-    print(getDistrict("53.488609", "-2.885376"))
+    lat, lon = 53.3724111, -2.861466
+    print(getWard(lat, lon))
+    print(getPostCode(lat, lon))
+    print(getDistrict(lat, lon))
+    print(getCouncillorTwitterHandles(lat, lon))
 

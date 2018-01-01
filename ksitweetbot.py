@@ -262,11 +262,12 @@ def splitTweetToMultiple(cont, urlsToAdd, tagsToAdd):
         print("Remaining: ", cont)
     return status
 
-def tweetTodaysEvents():
+def tweetTodaysEvents(today = None):
     ksiData = readKSIData("2016/2016_05.tsv")
     addVehicleData(ksiData, "2016/Veh.csv")
     sortedksiData = sortByDateTime(ksiData)
-    today = datetime.datetime.now()
+    if not today:
+        today = datetime.datetime.now()
     
     # scroll forward to today
     i = 0
@@ -287,8 +288,13 @@ def tweetTodaysEvents():
         print("seconds to wait: ", secondsWait)
         cont = composeTweet(date, event)
         if cont:
+            lat, lon = event["Latitude"], event["Longitude"]
             urlsToAdd = [' ', r"@livepedestrian", r"http://wacm.org.uk"]
             tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
+            cllrsOnTwitter = getCouncillorTwitterHandles(lat, lon)
+            if cllrsOnTwitter:
+                pass
+                #urlsToAdd = [' '] + cllrsOnTwitter + urlsToAdd[1:]
 
             # split into multiple tweets
             status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
@@ -321,7 +327,8 @@ def findCouncillorOnTwitter(name, council, ward):
 
 
 if __name__ == "__main__":
-    tweetTodaysEvents()
+    day = datetime.datetime.now() + datetime.timedelta(days=1)
+    tweetTodaysEvents(day)
     if 0:
         result = findCouncillorOnTwitter("James Noakes", "Liverpool", "Clubmoor") 
         if result:

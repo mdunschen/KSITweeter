@@ -137,6 +137,6 @@ def getAllCouncillors(councils):
 
 if __name__ == "__main__":
     allWards = getAllCouncillors(councillorURLS)
-    writeToDB(allWards, "halton.db")
+    writeToDB(allWards, "cllrs.db")
 
 
