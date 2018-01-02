@@ -327,7 +327,7 @@ def findCouncillorOnTwitter(name, council, ward):
 
 
 if __name__ == "__main__":
-    day = datetime.datetime.now() + datetime.timedelta(days=1)
+    day = datetime.datetime.now()
     tweetTodaysEvents(day)
     if 0:
         result = findCouncillorOnTwitter("James Noakes", "Liverpool", "Clubmoor") 
