@@ -22,6 +22,7 @@ councillorURLS.append(r"http://modgov.sefton.gov.uk/moderngov/mgFindMember.aspx"
 def writeToDB(allWards, dbName):
     db = sqlite3.connect(dbName)
     c = db.cursor()
+    c.execute(''' DROP TABLE IF EXISTS cllrs''')
     c.execute('''
         CREATE TABLE cllrs(id INTEGER PRIMARY KEY, city TEXT, cityURL TEXT, wardName TEXT, wardURL TEXT, cllrName TEXT, cllrEmail TEXT, cllrURL TEXT, cllrTwitter TEXT, cllrTwitterDesc TEXT, cllrTwitterURL TEXT)
         ''')
@@ -45,8 +46,8 @@ def writeToDB(allWards, dbName):
     db.commit()
     db.close()
 
-def writeToFile(allWards):
-    f = open("allcouncillors.tsv", "w")
+def writeToFile(allWards, fn):
+    f = open(fn, "w")
     f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("City/Town", "URL City", "Name Ward", "URL Ward", "Name Councillor", "Email", "URL Councillor", "twitter", "twitter_desc", "twitter_url"))
     for townUrl in allWards:
         name = allWards[townUrl]["name"]
@@ -126,7 +127,13 @@ def getAllCouncillors(councils):
                 cllrName = html.unescape(cllrs[c]['name'])
                 lastName = (cllrName.split(' '))[-1]
                 wardName = html.unescape(name)
-                twitterUser = findCouncillorOnTwitter(lastName, town, wardName) or findCouncillorOnTwitter(cllrName.split(' ')[1:], town, wardName)
+                nTries = 3
+                while(nTries):
+                    try:
+                        twitterUser = findCouncillorOnTwitter(lastName, town, wardName) or findCouncillorOnTwitter(cllrName.split(' ')[1:], town, wardName)
+                        nTries = 0
+                    except tweepy.error.TweepError:
+                        nTries -= 1
                 if twitterUser:
                     cllrs[c]['twitter'] = {"handle":"@%s" % twitterUser.screen_name, "desc":twitterUser.description, "link":"https://twitter.com/%s" % twitterUser.screen_name}
                 else:
@@ -138,5 +145,6 @@ def getAllCouncillors(councils):
 if __name__ == "__main__":
     allWards = getAllCouncillors(councillorURLS)
     writeToDB(allWards, "cllrs.db")
+    writeToFile(allWards, "cllrs.csv")
 
 

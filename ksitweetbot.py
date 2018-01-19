@@ -320,7 +320,7 @@ def findCouncillorOnTwitter(name, council, ward):
     api = twitterAPI()
     rlast = []
     for r in  tweepy.Cursor(api.search_users, "%s" % (name)).pages(10):
-        r = [u for u in r if (council.lower() in u.description.lower() or ward.lower() in u.description.lower())]
+        r = [u for u in r if ((council.lower() in u.description.lower() or ward.lower() in u.description.lower()) and ("member" in u.description.lower() or "cllr" in u.description.lower() or "councillor" in u.description.lower()))]
         if r and len(r) == 1:
             return r[0]
 
