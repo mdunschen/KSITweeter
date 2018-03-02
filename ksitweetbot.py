@@ -199,14 +199,14 @@ def composeTweet(eventDate, record):
     if streetname:
         pc = getPostCode(lat, lon)
         if pc:
-            streetinfo = "on %s (%s)" % (streetname, pc)
+            streetinfo = "on %s (%s)" % (streetname, pc[0])
         else:
             streetinfo = "on %s" % (streetname)
 
     else:
-        district = getDistrict(lat, lon)
-        pc = getPostCode(lat, lon)
-        if district and pc:
+        res = getLocInformation(lat, lon, ("admin_district", "outcode"))
+        if res:
+            district, pc = res[0], res[1]
             streetinfo = "in %s (%s)" % (district, pc)
         else:
             streetinfo = ""
@@ -293,8 +293,7 @@ def tweetTodaysEvents(today = None):
             tagsToAdd = [r"#VisionZero", r"#NotJustAStat"]
             cllrsOnTwitter = getCouncillorTwitterHandles(lat, lon)
             if cllrsOnTwitter:
-                pass
-                #urlsToAdd = [' '] + cllrsOnTwitter + urlsToAdd[1:]
+                urlsToAdd = [' '] + cllrsOnTwitter + urlsToAdd[1:]
 
             # split into multiple tweets
             status = splitTweetToMultiple(cont, urlsToAdd, tagsToAdd)
